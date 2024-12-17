@@ -48,7 +48,7 @@ const filesToExclude = [
 ].map(excludeFromDiff);
 
 // Step 2: Get current branch and upstream/fallback logic
-const getRemoteBranch = async () => {
+export const getRemoteBranch = async () => {
     const { stdout: localBranch } = await execa('git', ['symbolic-ref', '--short', 'HEAD']);
 
     try {

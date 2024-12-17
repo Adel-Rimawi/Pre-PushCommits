@@ -3,12 +3,11 @@ import { generatePrompt } from './utils/prompt.js';
 import { generateCommitMessage } from './utils/openai.js';
 import { KnownError } from './utils/error.js';
 import { squashUnpushedCommits, amendLastCommit } from './utils/operations.js';
-// import fs from 'fs';
+import { getRemoteBranch } from './utils/git.js';
 
 import readline from "readline";
 
 import 'dotenv/config';
-
 
 
 // Helper function to get user input
@@ -62,7 +61,16 @@ const main = async () => {
         if (userResponse === 'yes') {
             console.log(messagesCount > 1 ? 'Squashing all unpushed commits...' : 'Amending the last commit...');
             const operation = messagesCount > 1 ? squashUnpushedCommits : amendLastCommit;
-            await operation(squashMessage);
+
+            const remoteBranch = messagesCount > 1 ? await getRemoteBranch() : null;
+
+            if (messagesCount > 1) {
+                // Pass both params for squashing
+                await operation(squashMessage, remoteBranch);
+            } else {
+                // Pass only squashMessage for amend
+                await operation(squashMessage);
+            }
         } else {
             const responses = {
                 no: 'Squash operation aborted by the user.',

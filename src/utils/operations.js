@@ -1,15 +1,15 @@
 import { KnownError } from './error.js';
 import { execa } from 'execa';
 
-export const squashUnpushedCommits = async (squashMessage) => {
+export const squashUnpushedCommits = async (squashMessage, remoteBranch) => {
     try {
         if (!squashMessage) {
             throw new KnownError('No squash commit message provided.');
         }
 
-        console.log('Squashing all unpushed commits...');
+        console.log(`Squashing all unpushed commits to base ${remoteBranch}...`);
         // Reset to the last pushed commit
-        await execa('git', ['reset', '--soft', '@{u}']);
+        await execa('git', ['reset', '--soft', remoteBranch]);
 
         // Stage all changes
         await execa('git', ['add', '.']);
@@ -26,8 +26,9 @@ export const squashUnpushedCommits = async (squashMessage) => {
     }
 };
 
+
 export const amendLastCommit = async (squashMessage) => {
     console.log(`Updating commit message to: "${squashMessage}"`);
     await execa("git", ["commit", "--amend", "-m", squashMessage]);
-    process.exit(1);
+    process.exit(0);
 };

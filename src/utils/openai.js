@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { KnownError } from './error.js';
 import 'dotenv/config'; 
 
+
 export const generateCommitMessage = async (model, prompt, maxLength) => {
     try {
         console.log("ingenerateCommitMessage");
