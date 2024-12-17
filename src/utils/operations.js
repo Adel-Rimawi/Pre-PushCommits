@@ -29,4 +29,5 @@ export const squashUnpushedCommits = async (squashMessage) => {
 export const amendLastCommit = async (squashMessage) => {
     console.log(`Updating commit message to: "${squashMessage}"`);
     await execa("git", ["commit", "--amend", "-m", squashMessage]);
+    process.exit(1);
 };
