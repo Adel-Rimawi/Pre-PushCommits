@@ -2,7 +2,7 @@ import { execa } from 'execa';
 import { KnownError } from './error.js';
 
 // Step 1: Ensure we are in a Git repository
-export const checkGitRepo = async () => {
+export const checkRepo = async () => {
     const { stdout, failed } = await execa(
         'git',
         ['rev-parse', '--show-toplevel'],
@@ -48,47 +48,26 @@ const filesToExclude = [
 ].map(excludeFromDiff);
 
 // Step 2: Get current branch and upstream/fallback logic
-export const getRemoteBranch = async () => {
-    const { stdout: localBranch } = await execa('git', ['symbolic-ref', '--short', 'HEAD']);
 
-    try {
-        // Try to get upstream branch
-        const { stdout: upstream } = await execa('git', [
-            'for-each-ref',
-            '--format=%(upstream:short)',
-            `refs/heads/${localBranch}`,
-        ]);
-        return upstream.trim();
-    } catch {
-        // Fallback to origin/<localBranch>
-        return `origin/${localBranch}`;
-    }
-};
-export const getDiffBetweenBranches = async (excludeFiles = []) => {
-    let remoteBranch = await getRemoteBranch();
 
-    // Strip "origin/" when passing to git fetch
-    const fetchTarget = remoteBranch.startsWith('origin/')
-        ? remoteBranch.replace('origin/', '')
-        : remoteBranch;
+export const getStaged = async (excludeFiles = []) => {
+    await checkRepo();
+    console.log('Fetching changes...');
+    // Prepare the diff base for staged changes only
+    const diffBase = ['diff', '--cached', '--diff-algorithm=minimal'];
 
-    // Fetch the correct branch
-    await execa('git', ['fetch', 'origin', fetchTarget]);
-
-    const diffBase = ['diff', `${remoteBranch}..HEAD`, '--diff-algorithm=minimal'];
-
+    // Fetch the list of staged files
     const { stdout: files } = await execa('git', [
         ...diffBase,
         '--name-only',
-        ...filesToExclude,
         ...(excludeFiles.length ? excludeFiles.map(excludeFromDiff) : []),
     ]);
 
     if (!files) return null;
 
+    // Fetch the detailed diff of staged changes
     const { stdout: diff } = await execa('git', [
         ...diffBase,
-        ...filesToExclude,
         ...(excludeFiles.length ? excludeFiles.map(excludeFromDiff) : []),
     ]);
 
@@ -98,26 +77,3 @@ export const getDiffBetweenBranches = async (excludeFiles = []) => {
     };
 };
 
-// Step 4: Get commit messages and count
-export const getCommitMessagesAndCount = async () => {
-    const remoteBranch = await getRemoteBranch();
-
-    try {
-        const { stdout: log } = await execa('git', [
-            'log',
-            '--pretty=format:"- %s"',
-            `${remoteBranch}..HEAD`
-        ]);
-
-        if (!log) {
-            return { commitMessages: [], messagesCount: 0 };
-        }
-
-        const commitMessages = log.split('\n');
-        const messagesCount = commitMessages.length;
-
-        return { commitMessages, messagesCount };
-    } catch (error) {
-        throw new KnownError(`Error retrieving commit messages: ${error.message}`);
-    }
-};

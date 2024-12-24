@@ -2,10 +2,10 @@ import OpenAI from "openai";
 import { KnownError } from './error.js';
 import 'dotenv/config'; 
 
+const model = process.env.MODEL || 'gpt-4o-mini';
 
 export const generateCommitMessage = async (model, prompt, maxLength) => {
     try {
-        console.log("ingenerateCommitMessage");
 
         // Validate API key
         if (!process.env.OPENAI_API_KEY) {

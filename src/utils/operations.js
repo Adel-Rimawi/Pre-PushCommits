@@ -1,34 +1,33 @@
 import { KnownError } from './error.js';
 import { execa } from 'execa';
+import fs from 'fs';
 
-export const squashUnpushedCommits = async (squashMessage, remoteBranch) => {
+export const swapMessage = async (suggestedAiMessages, commitMsgFile) => {
     try {
-        if (!squashMessage) {
-            throw new KnownError('No squash commit message provided.');
+        // Check if the AI-suggested messages are provided
+        if (!suggestedAiMessages) {
+            throw new KnownError('No suggested AI commit message provided.');
         }
 
-        console.log(`Squashing all unpushed commits to base ${remoteBranch}...`);
-        // Reset to the last pushed commit
-        await execa('git', ['reset', '--soft', remoteBranch]);
+        // Check if the commit message file path is provided
+        if (!commitMsgFile) {
+            throw new KnownError('No commit message file path provided.');
+        }
 
-        // Stage all changes
-        await execa('git', ['add', '.']);
+        // Log the original commit message (optional)
+        const originalCommitMessage = fs.readFileSync(commitMsgFile, 'utf8');
+        console.log(`Original Commit Message:\n${originalCommitMessage}`);
 
-        // Create a single commit with the provided message
-        await execa('git', ['commit', '-m', squashMessage]);
+        // Write the updated message back to the commit message file
+        fs.writeFileSync(commitMsgFile, suggestedAiMessages, 'utf8');
+        console.log(`Updated Commit Message:\n${suggestedAiMessages}`);
 
-        console.log('All unpushed commits have been squashed into one.');
+        // Exit successfully
         process.exit(0);
 
     } catch (error) {
-        console.error(`Error during squashing: ${error.message}`);
+        // Log the error and exit with a non-zero status code
+        console.error(`Error during Swapping: ${error.message}`);
         process.exit(1);
     }
-};
-
-
-export const amendLastCommit = async (squashMessage) => {
-    console.log(`Updating commit message to: "${squashMessage}"`);
-    await execa("git", ["commit", "--amend", "-m", squashMessage]);
-    process.exit(0);
 };
